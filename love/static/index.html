@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>love</title>
+<style>
+  :root {
+    --bg: #FBFAF8;
+    --surface: #FFFFFF;
+    --ink: #1F1B17;
+    --muted: #6B6359;
+    --line: #ECE7DF;
+    --accent: #9E2B4E;       /* garnet — used with restraint */
+    --accent-soft: #9E2B4E14;
+    --maxw: 720px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    width: 100%;
+    max-width: var(--maxw);
+    padding: 28px 20px 8px;
+  }
+  .wordmark {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--accent);
+  }
+  .tagline {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  main {
+    width: 100%;
+    max-width: var(--maxw);
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px 140px;
+  }
+  .empty {
+    margin-top: 18vh;
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .turn { margin: 26px 0; }
+  .you {
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .you::before {
+    content: "you";
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  /* The signature: attribution appears the moment Love picks a model. */
+  .badge {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--accent-soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-bottom: 12px;
+    opacity: 0;
+    transition: opacity .35s ease;
+  }
+  .badge.show { opacity: 1; }
+  .badge b { color: var(--accent); font-weight: 600; }
+  .answer { white-space: pre-wrap; word-wrap: break-word; }
+  .answer .caret {
+    display: inline-block;
+    width: 7px;
+    height: 1.05em;
+    margin-left: 1px;
+    transform: translateY(2px);
+    background: var(--accent);
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { to { visibility: hidden; } }
+  .error {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+    padding: 16px 20px 22px;
+  }
+  .composer {
+    width: 100%;
+    max-width: var(--maxw);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px 10px 10px 16px;
+    box-shadow: 0 6px 24px #1f1b170d;
+  }
+  .composer:focus-within { border-color: var(--accent); }
+  textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    max-height: 160px;
+    padding: 6px 0;
+  }
+  button {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 11px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: opacity .2s ease;
+  }
+  button:disabled { opacity: .4; cursor: default; }
+  @media (prefers-reduced-motion: reduce) {
+    .badge, button { transition: none; }
+    .caret { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="wordmark">love</div>
+    <div class="tagline">Ask anything. Love picks the model that fits — and tells you which.</div>
+  </header>
+
+  <main id="thread">
+    <div class="empty" id="empty">Nothing here yet. Ask the first question below.</div>
+  </main>
+
+  <footer>
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Ask love anything…"></textarea>
+      <button id="send">Ask</button>
+    </div>
+  </footer>
+
+<script>
+  const thread = document.getElementById("thread");
+  const empty = document.getElementById("empty");
+  const input = document.getElementById("input");
+  const send = document.getElementById("send");
+
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 160) + "px";
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); }
+  });
+  send.addEventListener("click", ask);
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text) n.textContent = text;
+    return n;
+  }
+
+  async function ask() {
+    const query = input.value.trim();
+    if (!query) return;
+    if (empty) empty.remove();
+
+    input.value = "";
+    input.style.height = "auto";
+    input.disabled = true;
+    send.disabled = true;
+
+    const turn = el("div", "turn");
+    turn.appendChild(el("div", "you", query));
+    const badge = el("div", "badge");
+    const answer = el("div", "answer");
+    const caret = el("span", "caret");
+    answer.appendChild(caret);
+    turn.appendChild(badge);
+    turn.appendChild(answer);
+    thread.appendChild(turn);
+    turn.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let text = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        let i;
+        while ((i = buf.indexOf("\n\n")) !== -1) {
+          const frame = buf.slice(0, i).trim();
+          buf = buf.slice(i + 2);
+          if (!frame.startsWith("data:")) continue;
+          const msg = JSON.parse(frame.slice(5).trim());
+
+          if (msg.type === "meta") {
+            badge.innerHTML = "love chose <b></b> · ";
+            badge.querySelector("b").textContent = msg.model;
+            badge.appendChild(document.createTextNode(msg.why));
+            badge.classList.add("show");
+          } else if (msg.type === "token") {
+            text += msg.text;
+            answer.textContent = text;
+            answer.appendChild(caret);
+          } else if (msg.type === "error") {
+            caret.remove();
+            const e = el("div", "error",
+              "Something broke reaching the model: " + msg.text +
+              " — check the server logs or your OpenRouter key.");
+            answer.appendChild(e);
+          }
+        }
+      }
+    } catch (err) {
+      caret.remove();
+      answer.appendChild(el("div", "error",
+        "Couldn't reach the service. Is it running? (" + err.message + ")"));
+    } finally {
+      caret.remove();
+      input.disabled = false;
+      send.disabled = false;
+      input.focus();
+    }
+  }
+
+  input.focus();
+</script>
+</body>
+</html>

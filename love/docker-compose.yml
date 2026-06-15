@@ -1,0 +1,14 @@
+services:
+  love:
+    build: .
+    container_name: love
+    env_file: .env
+    ports:
+      - "8100:8000"
+    restart: unless-stopped
+
+# Note: Nginx Proxy Manager proxies a korgems.com subdomain to this container.
+# If NPM runs in Docker, the cleanest wiring is to put both on a shared external
+# network and point NPM at http://love:8000. Otherwise point NPM at the host's
+# IP on port 8000. Either way: enable Websockets Support and, in the Advanced
+# tab, add `proxy_buffering off;` so streamed answers aren't held back.
