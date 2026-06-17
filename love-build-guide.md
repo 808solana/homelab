@@ -114,8 +114,8 @@ Deploy: sync the repo to /mnt/storage/love on kor@<HOST>. Create .env from
 Then `docker compose up -d --build`.
 
 Acceptance test — run on the box and paste the output:
-  1) curl -s localhost:8000/health
-  2) curl -N -X POST localhost:8000/api/chat -H 'content-type: application/json' \
+  1) curl -s localhost:8100/health
+  2) curl -N -X POST localhost:8100/api/chat -H 'content-type: application/json' \
        -d '{"query":"write a python function to reverse a string"}'
   3) docker compose ps
 Expected: health is ok; the chat call streams a meta frame naming the CODE model,
@@ -234,8 +234,8 @@ The agent can't safely edit Nginx Proxy Manager's database, so do this once in t
 NPM web UI:
 
 - **Proxy Host** → Domain `love.korgems.com` → forward to the Love container on
-  port `8000` (scheme http; host = the container name if NPM shares its Docker
-  network, otherwise the box's IP).
+  port `8100` (scheme http; host = the container name if NPM shares its Docker
+  network use port `8000`, otherwise use the box's IP on port `8100`).
 - **Websockets Support:** on.
 - **SSL:** request a Let's Encrypt cert, Force SSL.
 - **Advanced** tab: add `proxy_buffering off;` — without it Nginx buffers the
